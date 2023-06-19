@@ -19,6 +19,7 @@ def index():
 @app.route("/get_number", methods=["POST"])
 def get_number():
     bar = int(request.form["number"].replace(' ', ''))
+    print(bar)
     #int(request.form["number"])
     # 알라딘 정보 가져오기
     
@@ -30,10 +31,8 @@ def get_number():
     prices = result2[0].find_all('b')
     desired_price = prices[-1].text
     desired_price2 = prices[-2].text
-    aladin_p = int(desired_price.strip('원').replace(',', ''))
-    aladin_a = int(desired_price2.strip('원').replace(',', ''))
-    #print(aladin_p)  # 개인판매자 가격
-    #print(aladin_a) #알라딘 가격
+    aladin_p = int(desired_price.strip('원').replace(',', '')) # 개인판매자 가격
+    aladin_a = int(desired_price2.strip('원').replace(',', '')) #알라딘 가격
     result.append(min(aladin_a, aladin_p))
     
     url = 'https://www.aladin.co.kr/shop/usedshop/wc2b_search.aspx?ActionType=1&SearchTarget=All&KeyWord=' + str(bar)
@@ -56,7 +55,10 @@ def get_number():
     response = urlopen(response, context=ctx)
     soup = BeautifulSoup(response, 'html.parser')
     result2 = soup.select('em.yes_b')
-    yes24_p = int(result2[0].text.replace(',', ''))
+    try:
+        yes24_p = int(result2[0].text.replace(',', ''))
+    except:
+        yes24_p = 0
     #print(yes24_p) #예스24 중고가
     result.append(yes24_p)
     
