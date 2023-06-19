@@ -1,32 +1,311 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cloudtype - Flask</title>
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.3/dist/full.css" rel="stylesheet" type="text/css" />
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
-  <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyonBlix 도서</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        h2 {
+            margin-top: 20px;
+        }
+
+        #searchContainer {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #numberInput {
+            padding: 5px;
+            margin-right: 5px;
+        }
+
+        #getButton, #cartButton {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #getButton:hover, #cartButton:hover {
+            background-color: #45a049;
+        }
+
+        #result, #cartContainer {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .price-group {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        .price-group p {
+            margin: 5px;
+        }
+        
+        .price-group.pyonblix {
+            border-color: red;
+        }
+        
+        #loading-message {
+            text-align: center;
+            font-weight: bold;
+            color: gray;
+            margin-top: 20px;
+        }
+
+        .error-message {
+            text-align: center;
+            color: red;
+            margin-top: 20px;
+        }
+
+        #cartButtonContainer {
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        #clearCartButton {
+            padding: 5px 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #clearCartButton:hover {
+            background-color: #d32f2f;
+        }
+
+        #cartList {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #cartList li {
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        .removeButton {
+            float: right;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .removeButton:hover {
+            background-color: #d32f2f;
+        }
+
+        .status-group {
+            display: flex;
+            align-items: center;
+        }
+        
+        .center-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-<div class="hero min-h-screen bg-base-200">
-  <div class="hero-content flex-col lg:flex-row-reverse">
-    <img src="{{ url_for('static', filename='img/flask.webp') }}" class="w-36 rounded-lg md:ml-5 lg:ml-5"  alt="flask"/>
-    <div>
-      <h1 class="text-5xl font-bold">Flask</h1>
-      <p class="py-6">클라우드타입에서 배포한 Flask 어플리케이션입니다.</p>
-      <button type="button" onclick="window.open('https://github.com/cloudtype-examples/flask')" class="btn btn-outline rounded">
-        GitHub
-      </button>
-      <button type="button" onclick="window.open('https://docs.cloudtype.io/')" class="btn btn-outline rounded">
-        Docs
-      </button>
-      <button type="button" onclick="window.open('https://discord.gg/U7HX4BA6hu')" class="btn btn-outline rounded">
-        Discord
-      </button>
+    <h1>중고책 매입가 조회</h1>
+    <div id="searchContainer">
+        <input type="text" id="numberInput" placeholder="ISBN ('-'제외)" required>
+        <button id="getButton">검색</button>
+        <button id="cartButton">장바구니</button>
     </div>
-  </div>
-</div>
+    <div id="bookTitleContainer" class="center-container"></div>
+    <div id="addButtonContainer" class="center-container"></div>
+    <div id="result">
+        <h2>PyonBlix</h2>
+        <div id="pyonblixResults" class="price-group pyonblix"></div>
+        <h2 id="aladinTitle" style="display: none;">알라딘</h2>
+        <div id="aladinResults" class="price-group"></div>
+        <h2 id="yes24Title" style="display: none;">Yes24</h2>
+        <div id="yes24Results" class="price-group"></div>
+    </div>
+    <div id="loading-message"></div>
+    <div id="error-message"></div>
+
+    <div id="cartContainer">
+        <h2>장바구니</h2>
+        <ul id="cartList"></ul>
+        <div id="cartButtonContainer">
+            <button id="clearCartButton">장바구니 비우기</button>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            var pdf_list = []; // Define the pdf_list variable
+
+            function fetchBookInfo() {
+                var number = $("#numberInput").val();
+                $("#result").hide();
+                $("#cartContainer").fadeOut();
+                $("#loading-message").text("가격 정보 조회 중...");
+                $("#error-message").text("");
+                $("#bookTitleContainer").empty();
+                $("#addButtonContainer").empty();
+
+                $.ajax({
+                    url: "/get_number",
+                    method: "POST",
+                    data: {
+                        number: number
+                    },
+                    success: function(data) {
+                        var pyonblixResultsHtml =
+                            "<p>최상: " + data.result[8] + "</p>" +
+                            "<p>상: " + data.result[9] + "</p>" +
+                            "<p>중: " + data.result[10] + "</p>";
+
+                        var aladinResultHtml =
+                            "<p>최상: " + data.result[1] + "</p>" +
+                            "<p>상: " + data.result[2] + "</p>" +
+                            "<p>중: " + data.result[3] + "</p>";
+                        
+                        var yes24ResultHtml =
+                            "<p>최상: " + data.result[5] + "</p>" +
+                            "<p>상: " + data.result[6] + "</p>" +
+                            "<p>중: " + data.result[7] + "</p>";
+                        
+                        $("#yes24Results").show();
+                        $("#yes24Title").show();
+                        $("#aladinResults").show();
+                        $("#aladinTitle").show();
+                        $("#pyonblixResults").html(pyonblixResultsHtml);
+                        $("#aladinResults").html(aladinResultHtml);
+                        $("#yes24Results").html(yes24ResultHtml);
+                        $("#loading-message").text("");
+                        $("#result").fadeIn();
+                        if (data.result[8] < data.result[1]) {
+                            $("#aladinResults").hide();
+                            $("#aladinTitle").hide();
+                        }
+                        if (data.result[8] < data.result[5]) {
+                            $("#yes24Results").hide();
+                            $("#yes24Title").hide();
+                        }
+
+                        // 책 제목 출력
+                        var bookTitleHtml = "<p style='margin-bottom: 10px;'>제목: " + data.result[11] + "</p>";
+                        $("#bookTitleContainer").html(bookTitleHtml);
+
+                        // 판매 리스트에 추가하기 버튼 생성
+                        var addButtonHtml = "<button id='addButton'>판매 리스트에 추가하기</button>";
+                        $("#addButtonContainer").html(addButtonHtml);
+
+                        // 판매 리스트에 추가하기 버튼 클릭 이벤트
+                        $("#addButton").click(function() {
+                            var bookTitle = data.result[11];
+                            var pyonblixPrice = {
+                                best: data.result[8],
+                                good: data.result[9],
+                                fair: data.result[10]
+                            };
+
+                            var bookInfo = {
+                                title: bookTitle,
+                                isbn: number, // 추가된 부분: ISBN 정보 저장
+                                pyonblixPrice: pyonblixPrice
+                            };
+
+                            pdf_list.push(bookInfo);
+                            alert("장바구니에 추가되었습니다.")
+                        });
+                    },
+                    error: function() {
+                        $("#loading-message").text("");
+                        $("#result").hide();
+                        $("#error-message").text("가격 정보를 가져오지 못했습니다.책 뒷면 바코드 ISBN 숫자 13자리를 정확히 입력하세요. ('-', 띄어쓰기 제외)");
+                    }
+                });
+            }
+
+            function displayCart() {
+                $("#result").hide();
+                $("#cartContainer").fadeIn();
+                $("#cartList").empty();
+
+                if (pdf_list.length === 0) {
+                    $("#cartList").append("<li>장바구니가 비어 있습니다.</li>");
+                } else {
+                    for (var i = 0; i < pdf_list.length; i++) {
+                        var book = pdf_list[i];
+                        var itemHtml =
+                            "<li>" +
+                            "<p><strong>제목:</strong> " + book.title + "</p>" +
+                            "<p><strong>ISBN:</strong> " + book.isbn + "</p>" + // 추가된 부분: ISBN 정보 출력
+                            "<div class='price-group pyonblix'>" +
+                            "<p>최상: " + book.pyonblixPrice.best + "</p>" +
+                            "<p>상: " + book.pyonblixPrice.good + "</p>" +
+                            "<p>중: " + book.pyonblixPrice.fair + "</p>" +
+                            "</div>" +
+                            "<div class='condition-group'>" +
+                            "<label for='best_" + i + "'><input type='radio' id='best_" + i + "' name='condition_" + i + "' value='best'>최상</label>" +
+                            "<label for='good_" + i + "'><input type='radio' id='good_" + i + "' name='condition_" + i + "' value='good'>상</label>" +
+                            "<label for='fair_" + i + "'><input type='radio' id='fair_" + i + "' name='condition_" + i + "' value='fair'>중</label>" +
+                            "</div>" +
+                            "<button class='removeButton' data-index='" + i + "'>X</button>" +
+                            "</li>";
+                        $("#cartList").append(itemHtml);
+                    }
+                }
+
+                $(".removeButton").click(function() {
+                    var index = $(this).data("index");
+                    pdf_list.splice(index, 1);
+                    displayCart();
+                });
+            }
+
+            $("#getButton").click(function() {
+                fetchBookInfo();
+            });
+
+            $("#cartButton").click(function() {
+                $("#addButtonContainer").empty();
+                $("#bookTitleContainer").empty();
+                $("#cartContainer").fadeIn();
+                $("#result").hide();
+                displayCart();
+            });
+
+            $("#clearCartButton").click(function() {
+                pdf_list = [];
+                displayCart();
+            });
+
+            $("#numberInput").keydown(function(e) {
+                if (e.keyCode === 13) {
+                    fetchBookInfo();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
