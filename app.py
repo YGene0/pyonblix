@@ -28,12 +28,15 @@ def get_number():
     response = urlopen(url, context=ctx)
     soup = BeautifulSoup(response, 'html.parser')
     result2 = soup.select('table.usedtable01')
-    prices = result2[0].find_all('b')
-    desired_price = prices[-1].text
-    desired_price2 = prices[-2].text
-    aladin_p = int(desired_price.strip('원').replace(',', '')) # 개인판매자 가격
-    aladin_a = int(desired_price2.strip('원').replace(',', '')) #알라딘 가격
-    result.append(min(aladin_a, aladin_p))
+    try:
+        prices = result2[0].find_all('b')
+        desired_price = prices[-1].text
+        desired_price2 = prices[-2].text
+        aladin_p = int(desired_price.strip('원').replace(',', '')) # 개인판매자 가격
+        aladin_a = int(desired_price2.strip('원').replace(',', '')) #알라딘 가격
+        result.append(min(aladin_a, aladin_p))
+    except:
+        result.append(0)
     
     url = 'https://www.aladin.co.kr/shop/usedshop/wc2b_search.aspx?ActionType=1&SearchTarget=All&KeyWord=' + str(bar)
     response = urlopen(url, context=ctx)
@@ -54,12 +57,11 @@ def get_number():
     response = Request(url, headers={'User-Agent': 'Mozilla/5.0'})  # User-Agent 설정
     response = urlopen(response, context=ctx)
     soup = BeautifulSoup(response, 'html.parser')
-    result2 = soup.select('em.yes_b')
     try:
-        yes24_p = int(result2[0].text.replace(',', ''))
+        result2 = soup.select('em.yes_b')
+        yes24_p = int(result2[0].text.replace(',', '')) #예스24 중고가
     except:
         yes24_p = 0
-    #print(yes24_p) #예스24 중고가
     result.append(yes24_p)
     
     url = 'https://www.yes24.com/Mall/buyback/Search?CategoryNumber=018&SearchWord=' + str(bar)
@@ -67,12 +69,17 @@ def get_number():
     response = urlopen(response, context=ctx)
     soup = BeautifulSoup(response, 'html.parser')
     result2 = soup.select('div.bbG_price')
-    table = result2[0].find('table')
-    price_data = table.select('tbody tr td')
-    yes24_1 = price_data[1].text.strip('원').replace(',', '')
-    yes24_2 = price_data[2].text.strip('원').replace(',', '')
-    yes24_3 = price_data[3].text.strip('원').replace(',', '')
-    #print(yes24_1,yes24_2,yes24_3) #예스24 최상,상,중
+    try:
+        table = result2[0].find('table')
+        price_data = table.select('tbody tr td')
+        yes24_1 = price_data[1].text.strip('원').replace(',', '') #예스24 최상,상,중
+        yes24_2 = price_data[2].text.strip('원').replace(',', '')
+        yes24_3 = price_data[3].text.strip('원').replace(',', '')
+    except:
+        yes24_1 = 0
+        yes24_2 = 0
+        yes24_3 = 0
+        
     if yes24_1 == '':
         result.append(0)
     else:
@@ -105,6 +112,8 @@ def get_number():
         real_1 = round(min_p/2,-2)
         if math.ceil((min_p/2)/100)*100 >= round(max_1*1.2,-2):
             real_1 = round(max_1*1.2,-2)
+        if min_p == 0 and max_1 != 0:
+            real_1 = round(max_1*0.65,-2)
     real_2 = math.ceil((real_1*0.9)/100)*100
     real_3 = math.ceil((real_2*0.9)/100)*100
     result.append(real_1)
