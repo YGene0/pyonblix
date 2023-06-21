@@ -114,6 +114,9 @@ def get_number():
             real_1 = round(max_1*1.2,-2)
         if min_p == 0 and max_1 != 0:
             real_1 = round(max_1*0.65,-2)
+
+    if real_1 < 500 and max_1 == 0:
+        real_1 = 0
     real_2 = math.ceil((real_1*0.9)/100)*100
     real_3 = math.ceil((real_2*0.9)/100)*100
     result.append(real_1)
