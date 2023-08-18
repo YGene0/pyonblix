@@ -27,7 +27,7 @@ def get_number():
     
     result = []
     url = 'https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=' + str(bar)
-    response = urlopen(url, context=ctx)
+    response = urlopen(url) #, context=ctx)
     soup = BeautifulSoup(response, 'html.parser')
     result2 = soup.select('table.usedtable01')
     try:
@@ -41,8 +41,8 @@ def get_number():
         result.append(0)
     
     url = 'https://www.aladin.co.kr/shop/usedshop/wc2b_search.aspx?ActionType=1&SearchTarget=All&KeyWord=' + str(bar)
-    response = urlopen(url, context=ctx)
-    soup = BeautifulSoup(response, 'html.parser')
+    response = urlopen(url) #, context=ctx)
+    soup = BeautifulSoup(response) #, 'html.parser')
     result2 = soup.select('td.c2b_tablet3')
     booktitle = soup.select('a.c2b_b')
     book_title = booktitle[0].text.strip()
@@ -57,7 +57,7 @@ def get_number():
     
     url = 'https://www.yes24.com/Product/Search?domain=USED_GOODS&query=' + str(bar)
     response = Request(url, headers={'User-Agent': 'Mozilla/5.0'})  # User-Agent 설정
-    response = urlopen(response, context=ctx)
+    response = urlopen(response) #, context=ctx)
     soup = BeautifulSoup(response, 'html.parser')
     try:
         result2 = soup.select('em.yes_b')
