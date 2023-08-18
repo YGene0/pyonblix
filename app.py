@@ -29,7 +29,7 @@ def get_number():
     
     result = []
     url = 'https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=' + str(bar)
-    response = urlopen(url, context=ctx)
+    response = urlopen(url) #, context=ctx)
     soup = BeautifulSoup(response, 'html.parser')
     result2 = soup.select('table.usedtable01')
     try:
