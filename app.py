@@ -5,6 +5,7 @@ from urllib.request import urlopen, Request
 import requests
 from flask_cors import CORS
 import math
+'''
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -12,7 +13,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # SSLContext 생성하여 DH 키 크기 문제 해결
 ctx = ssl.create_default_context()
 ctx.set_ciphers("DEFAULT@SECLEVEL=1")
-
+'''
 app = Flask(__name__)
 
 @app.route("/")
